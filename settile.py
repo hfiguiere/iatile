@@ -1,6 +1,4 @@
-#!env python2.7
-
-# Not Python 3????
+#!env python
 
 #
 # Licensed under GPL-3.0 or later
@@ -22,8 +20,8 @@ parser.add_argument("-p", type=int, help="The page to set as tile (default=0)", 
 args = parser.parse_args()
 
 item_id = args.item_id
-if string.find(item_id, URL_BASE) == 0:
-    item_id = string.replace(item_id, URL_BASE, "")
+if str.find(item_id, URL_BASE) == 0:
+    item_id = str.replace(item_id, URL_BASE, "")
 
 item = get_item(item_id)
 if item is None:
@@ -75,13 +73,13 @@ for page in pages:
         pageType[0].replaceChild(t, f)
 
 if modified:
-    out_xml = xmldoc.toprettyxml(indent="", newl="", encoding="utf-8")
     if args.dry_run:
-        print(out_xml)
+        out_xml = xmldoc.toprettyxml(indent="", newl="", encoding="utf-8")
+        print(str(out_xml))
     else:
         new_file = scandata_file + "_new"
         f = open(new_file, "w")
-        f.write(out_xml)
+        xmldoc.writexml(f)
         f.close()
         item.upload({scandata_file: new_file})
 else:

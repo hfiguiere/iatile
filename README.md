@@ -17,26 +17,29 @@ You need the `internetarchive` Python module. See:
 https://github.com/jjjake/internetarchive
 https://archive.org/services/docs/api/internetarchive/quickstart.html
 
+Ideally you'd use a venv.
+```
+ $ python3 -m venv venv
+ $ source ./venv/bin/activate
+ $ pip install internetarchive
+```
 Then you need to configure it:
-
-$ ia configure
-
+```
+ $ ia configure
+```
 Will ask for your Internet Archive credentials. These are the one
 settile will use.
 
-
 Usage
 -----
-
-
+```
 $ settile.py ID
-
+```
 This will set the tile to page 0 for the item ID.
 
-* ID is either the item ID or the Internet Archive URL.
+* `ID` is either the item ID or the Internet Archive URL.
 * Use `-n` or `--dry-run` for trying without saving
 * Pass `-p N` to set the tile to page N
-
 
 Author
 ------
