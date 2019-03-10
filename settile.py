@@ -2,6 +2,10 @@
 
 # Not Python 3????
 
+#
+# Licensed under GPL-3.0 or later
+#
+
 import string
 import sys
 import argparse
