@@ -3,9 +3,10 @@ settile.py
 
 A Python script to change the tile page of an Internet Archive text item.
 
-The tile page is the page that show up in the list. Usually we want
-the cover, tbut the automation on Internet Archive doesn't always
-think so.
+The tile page is the page that shows up in the list as a
+thumbnail. Usually we want the cover, but the automation on Internet
+Archive doesn't always think so, and there is no easy way to change
+this.
 
 So I wrote a tool to do it.
 
@@ -28,7 +29,7 @@ Then you need to configure it:
  $ ia configure
 ```
 Will ask for your Internet Archive credentials. These are the one
-settile will use.
+`settile` will use.
 
 Usage
 -----
