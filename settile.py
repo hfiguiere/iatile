@@ -27,8 +27,11 @@ if item is None:
     sys.exit(1)
 
 fnames = [f.name for f in item.get_files(glob_pattern='*_scandata.xml')]
-if len(fnames) != 1:
+if len(fnames) > 1:
     print("Too many scandata, abort.")
+    sys.exit(1)
+elif len(fnames) < 1:
+    print("Scandata not found.")
     sys.exit(1)
 
 scandata_file = fnames[0]
