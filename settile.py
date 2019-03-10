@@ -73,15 +73,14 @@ for page in pages:
         pageType[0].replaceChild(t, f)
 
 if modified:
-    if args.dry_run:
-        out_xml = xmldoc.toprettyxml(indent="", newl="", encoding="utf-8")
-        print(str(out_xml))
-    else:
-        new_file = scandata_file + "_new"
-        f = open(new_file, "w")
-        xmldoc.writexml(f)
-        f.close()
+    new_file = scandata_file + "_new"
+    f = open(new_file, "w")
+    xmldoc.writexml(f)
+    f.close()
+    if args.dry_run is False:
         item.upload({scandata_file: new_file})
+    else:
+        print("Output is in %s" % new_file)
 else:
     print("Not modified")
 
