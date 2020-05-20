@@ -17,47 +17,74 @@ from urllib.request import urlretrieve
 
 from internetarchive import upload
 
+parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
+parser.add_argument("url", help="URL")
+parser.add_argument("-n", "--dry-run", action="store_true", help="Dry run")
+parser.add_argument("-v", "--verbose", action="store_true", help="Verbose")
+
+args = parser.parse_args()
+dry_run = args.dry_run
+verbose = args.verbose
+
+if verbose is True:
+    reporter = lambda count, size, total: print(".", end="", flush=True)
+else:
+    reporter = None
+
+def linkify(url):
+    return '<a href="{}">{}</a>'.format(url, url)
 
 def upload_video(url, params):
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         source = params['source']
         title = "LAC {} - {}".format(params["year"], params["title"])
-        description = "{}\n{}\n{}\n\n{}\n\nOriginal URL: {}\n{}".format(
+        description = "{}\n<b>{}</b>\n<em>{}</em>\n\n{}\n\nOriginal URL: {}\n{}".format(
             params["conf"], params["title"], params["presenter"],
             params["abstract"],
-            source,
+            linkify(source),
             params["license_text"])
 
         md = dict(title=title,
-                  mediatype="movie",
+                  mediatype="movies",
                   collection="opensource_movies",
                   creator="linuxaudio.org",
                   subject=[
+                      "linux audio conference",
                       "linux", "audio", "software", "kde", "gnome",
-                      "conference", "free software", "linux audio conference",
+                      "conference", "free software",
                       params['year']
                   ],
                   date = params['year'],
+                  year = params['year'],
                   language = 'eng',
-                  license = params['license'],
+                  licenseurl = params['license'],
                   description=description,
-                  source=params['source']
+                  source=source
         )
 
         # slides + paper
         # "texts", "opensource"
 
-        print("video url = {}".format(url))
         print("description {}".format(description))
         print("params {}".format(params))
 
         u = urlparse(url)
         local_item_file = os.path.basename(u.path)
         (item_id, ext) = os.path.splitext(local_item_file)
-        (item_file, headers) = urlretrieve(url, filename=os.path.join(tmpdirname, local_item_file))
-        # print("item_file {}".format(item_file))
-        r = upload(item_id, item_file, metadata=md)
+        print("Downloading video {}".format(url))
+        (item_file, headers) = urlretrieve(
+            url,
+            filename=os.path.join(tmpdirname, local_item_file),
+            reporthook=reporter)
+        if verbose is True:
+            print("Done")
+
+        if dry_run is False:
+            r = upload(item_id, item_file, metadata=md)
+            print("Status {}".format(r[0].status_code))
+        else:
+            print("Dry run, not uploading video")
 
         for asset in ["paper_url", "slides_url"]:
             if params[asset] is None:
@@ -65,8 +92,8 @@ def upload_video(url, params):
 
             if "bookreader-defaults" in md:
                 del md["bookreader-defaults"]
-            if "license" in md:
-                del md["license"]
+            if "licenseurl" in md:
+                del md["licenseurl"]
 
             if asset == "paper_url":
                 subtitle = "Paper"
@@ -74,11 +101,14 @@ def upload_video(url, params):
                 subtitle = "Slides"
                 md["bookreader-defaults"] = "mode/1up"
 
-            description = "{}\n{}: {}\n{}\n\n{}\n\nOriginal URL: {}".format(
+            description = "{}\n{}: <b>{}</b>\n<em>{}</em>\n\n{}\n\nOriginal URL: {}".format(
                 params["conf"], subtitle, params["title"], params["presenter"],
                 params["abstract"],
-                source)
-
+                linkify(source))
+            md["title"] = "LAC {} - {}: {}".format(params["year"],
+                                                   subtitle,
+                                                   params["title"])
+            md["creator"] = params["presenter"]
             md["mediatype"] = "texts"
             md["collection"] = "opensource"
             md["description"] = description
@@ -93,17 +123,22 @@ def upload_video(url, params):
 
             (item_file, headers) = urlretrieve(
                 params[asset],
-                filename=os.path.join(tmpdirname, local_item_file)
+                filename=os.path.join(tmpdirname, local_item_file),
+                reporthook=reporter
             )
-            print("item_file {}".format(item_file))
-            upload(asset_item_id, item_file, metadata=md)
+            if verbose is True:
+                print("Done")
 
+            if dry_run is False:
+                if verbose is True:
+                    print("Uploading {}...".format(item_file))
+                r = upload(asset_item_id, item_file, metadata=md)
+                print("Status {}".format(r[0].status_code))
+                if verbose is True:
+                    print("Done")
+            else:
+                print("Dry run, not uploading {}".format(item_file))
 
-parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
-parser.add_argument("url", help="URL")
-parser.add_argument("-n", "--dry-run", action="store_true", help="Dry run")
-
-args = parser.parse_args()
 
 page = requests.get(args.url)
 tree = html.fromstring(page.content)
@@ -181,7 +216,7 @@ if year == "2011" or year == "2012" or year == "2013" or year == "2014":
     if len(result) >= 1:
         abstract = result[0].text_content();
     else:
-        abstract = None
+        abstract = ""
     # print("abstract:\n{}".format(abstract))
 
     params = dict(
