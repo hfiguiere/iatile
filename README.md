@@ -1,3 +1,9 @@
+lacupload.py
+============
+
+A Python script to upload the Linux Audio Conference videos to
+Internet Archive. With metadata.
+
 settile.py
 ==========
 
