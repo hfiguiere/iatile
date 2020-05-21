@@ -15,7 +15,7 @@ import requests
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
-from internetarchive import upload
+from internetarchive import upload, get_item
 
 parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
 parser.add_argument("url", help="URL")
@@ -31,8 +31,29 @@ if verbose is True:
 else:
     reporter = None
 
+#
+# Turn an url to HTML markup link
+#
+# Doesn't validate the url
 def linkify(url):
     return '<a href="{}">{}</a>'.format(url, url)
+
+
+#
+# Ensure the item_id is unused.
+#
+# Return the unused item_id or None
+#
+def ensure_item_id(item_id):
+    item = get_item(item_id)
+    while len(get_item(item_id).item_metadata) != 0:
+        l = len(item_id)
+        if l <= 12:
+            return None
+        item_id = item_id[:l - 1]
+
+    return item_id
+
 
 def upload_video(url, params):
 
@@ -86,7 +107,13 @@ def upload_video(url, params):
             item_file = dest_file
             print("File {} already downloaded".format(dest_file))
 
+        item_id = ensure_item_id(item_id)
+        if item_id is None:
+            print("Can't get item_id")
+            sys.exit(1)
+
         if dry_run is False:
+            print("Updloading {}".format(item_file))
             r = upload(item_id, item_file, metadata=md)
             print("Status {}".format(r[0].status_code))
         else:
