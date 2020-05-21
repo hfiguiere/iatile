@@ -1,4 +1,4 @@
-#!env python
+#!/usr/bin/env python
 
 #
 # Licensed under GPL-3.0 or later
@@ -45,6 +45,8 @@ def linkify(url):
 # Return the unused item_id or None
 #
 def ensure_item_id(item_id):
+    # Shrink to 80 chars. IA has a hard limit to 100.
+    item_id = item_id[:80]
     item = get_item(item_id)
     while len(get_item(item_id).item_metadata) != 0:
         l = len(item_id)
@@ -116,6 +118,8 @@ def upload_video(url, params):
             print("Updloading {}".format(item_file))
             r = upload(item_id, item_file, metadata=md)
             print("Status {}".format(r[0].status_code))
+            if r[0].status_code != 200:
+                sys.exit(1)
         else:
             print("Dry run, not uploading video")
 
@@ -174,6 +178,8 @@ def upload_video(url, params):
                 print("Status {}".format(r[0].status_code))
                 if verbose is True:
                     print("Done")
+                if r[0].status_code != 200:
+                    sys.exit(1)
             else:
                 print("Dry run, not uploading {}".format(item_file))
 
