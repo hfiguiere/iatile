@@ -36,7 +36,8 @@ def linkify(url):
 
 def upload_video(url, params):
 
-    with tempfile.TemporaryDirectory() as tmpdirname:
+#    with tempfile.TemporaryDirectory() as tmpdirname:
+        tmpdirname = "./downloads"
         source = params['source']
         title = "LAC {} - {}".format(params["year"], params["title"])
         description = "{}\n<b>{}</b>\n<em>{}</em>\n\n{}\n\nOriginal URL: {}\n{}".format(
@@ -73,12 +74,17 @@ def upload_video(url, params):
         local_item_file = os.path.basename(u.path)
         (item_id, ext) = os.path.splitext(local_item_file)
         print("Downloading video {}".format(url))
-        (item_file, headers) = urlretrieve(
-            url,
-            filename=os.path.join(tmpdirname, local_item_file),
-            reporthook=reporter)
-        if verbose is True:
-            print("Done")
+        dest_file = os.path.join(tmpdirname, local_item_file)
+        if os.path.exists(dest_file) is False:
+            (item_file, headers) = urlretrieve(
+                url,
+                filename=dest_file,
+                reporthook=reporter)
+            if verbose is True:
+                print("Done")
+        else:
+            item_file = dest_file
+            print("File {} already downloaded".format(dest_file))
 
         if dry_run is False:
             r = upload(item_id, item_file, metadata=md)
@@ -121,13 +127,18 @@ def upload_video(url, params):
             asset_item_id = "{}_{}".format(item_id, subtitle)
             print("item_id {}".format(asset_item_id))
 
-            (item_file, headers) = urlretrieve(
-                params[asset],
-                filename=os.path.join(tmpdirname, local_item_file),
-                reporthook=reporter
-            )
-            if verbose is True:
-                print("Done")
+            dest_file = os.path.join(tmpdirname, local_item_file)
+            if os.path.exists(dest_file) is False:
+                (item_file, headers) = urlretrieve(
+                    params[asset],
+                    filename=dest_file,
+                    reporthook=reporter
+                )
+                if verbose is True:
+                    print("Done")
+            else:
+                item_file = dest_file
+                print("File {} already downloaded".format(dest_file))
 
             if dry_run is False:
                 if verbose is True:
