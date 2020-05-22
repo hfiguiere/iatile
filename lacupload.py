@@ -136,7 +136,7 @@ def upload_video(url, params):
             sys.exit(1)
 
         if download_video and dry_run is False:
-            print("Updloading {}".format(item_file))
+            print("Updloading {} for {}".format(item_file, item_id))
             r = upload(item_id, item_file, metadata=md)
             print("Status {}".format(r[0].status_code))
             if r[0].status_code != 200:
@@ -182,6 +182,14 @@ def upload_video(url, params):
             local_item_file = os.path.basename(u.path)
             asset_item_id = "{}_{}".format(item_id, subtitle)
             print("item_id {}".format(asset_item_id))
+
+            # if this is empty we end up trying to upload the whole
+            # download directory.
+            # Let's just move on
+            # Test case: http://lac.linuxaudio.org/2012/video.php?id=13
+            if len(local_item_file) == 0:
+                print("Can't determine the local file name for '{}'".format(subtitle))
+                continue
 
             dest_file = os.path.join(tmpdirname, local_item_file)
             if os.path.exists(dest_file) is False:
