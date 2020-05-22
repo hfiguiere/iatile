@@ -21,10 +21,17 @@ parser = argparse.ArgumentParser(description="Set tile for Internet Archive item
 parser.add_argument("url", help="URL")
 parser.add_argument("-n", "--dry-run", action="store_true", help="Dry run")
 parser.add_argument("-v", "--verbose", action="store_true", help="Verbose")
+parser.add_argument("--slides-only", action="store_true", help="Only download the slides")
+parser.add_argument("--paper-only", action="store_true", help="Only download the paper")
+parser.add_argument("--video-only", action="store_true", help="Only download the video")
 
 args = parser.parse_args()
 dry_run = args.dry_run
 verbose = args.verbose
+
+download_slides = args.slides_only or not (args.paper_only or args.video_only)
+download_paper = args.paper_only or not (args.slides_only or args.video_only)
+download_video = args.video_only or not (args.paper_only or args.slides_only)
 
 if verbose is True:
     reporter = lambda count, size, total: print(".", end="", flush=True)
@@ -37,7 +44,6 @@ else:
 # Doesn't validate the url
 def linkify(url):
     return '<a href="{}">{}</a>'.format(url, url)
-
 
 #
 # Ensure the item_id is unused.
@@ -96,9 +102,9 @@ def upload_video(url, params):
         u = urlparse(url)
         local_item_file = os.path.basename(u.path)
         (item_id, ext) = os.path.splitext(local_item_file)
-        print("Downloading video {}".format(url))
         dest_file = os.path.join(tmpdirname, local_item_file)
-        if os.path.exists(dest_file) is False:
+        if download_video and os.path.exists(dest_file) is False:
+            print("Downloading video {}".format(url))
             (item_file, headers) = urlretrieve(
                 url,
                 filename=dest_file,
@@ -106,15 +112,16 @@ def upload_video(url, params):
             if verbose is True:
                 print("Done")
         else:
-            item_file = dest_file
-            print("File {} already downloaded".format(dest_file))
+            if download_video:
+                item_file = dest_file
+                print("File {} already downloaded".format(dest_file))
 
         item_id = ensure_item_id(item_id)
         if item_id is None:
             print("Can't get item_id")
             sys.exit(1)
 
-        if dry_run is False:
+        if download_video and dry_run is False:
             print("Updloading {}".format(item_file))
             r = upload(item_id, item_file, metadata=md)
             print("Status {}".format(r[0].status_code))
@@ -133,8 +140,12 @@ def upload_video(url, params):
                 del md["licenseurl"]
 
             if asset == "paper_url":
+                if not download_paper:
+                    continue
                 subtitle = "Paper"
             elif asset == "slides_url":
+                if not download_slides:
+                    continue
                 subtitle = "Slides"
                 md["bookreader-defaults"] = "mode/1up"
 
