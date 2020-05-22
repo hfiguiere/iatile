@@ -12,6 +12,7 @@ import tempfile
 
 from lxml import html
 import requests
+import urllib
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
@@ -171,8 +172,9 @@ def upload_video(url, params):
 
             dest_file = os.path.join(tmpdirname, local_item_file)
             if os.path.exists(dest_file) is False:
+                asset_url = urllib.parse.quote(params[asset], safe=":/", encoding="UTF-8")
                 (item_file, headers) = urlretrieve(
-                    params[asset],
+                    asset_url,
                     filename=dest_file,
                     reporthook=reporter
                 )
