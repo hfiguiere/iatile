@@ -40,6 +40,12 @@ else:
     reporter = None
 
 #
+# Turn a title to an id
+#
+def idify_title(title):
+    return re.sub(r"[^0-9a-zA-Z]", "", title.title())
+
+#
 # Turn an url to HTML markup link
 #
 # Doesn't validate the url
@@ -52,8 +58,8 @@ def linkify(url):
 # Return the unused item_id or None
 #
 def ensure_item_id(item_id):
-    # Shrink to 80 chars. IA has a hard limit to 100.
-    item_id = item_id[:80]
+    # Shrink to 70 chars. IA has a hard limit to 100.
+    item_id = item_id[:70]
     item = get_item(item_id)
     while len(get_item(item_id).item_metadata) != 0:
         l = len(item_id)
@@ -68,7 +74,8 @@ def upload_video(url, params):
 
 #    with tempfile.TemporaryDirectory() as tmpdirname:
         tmpdirname = "./downloads"
-        source = params['source']
+        source = params["source"]
+        year = params["year"]
         title = "LAC {} - {}".format(params["year"], params["title"])
         description = "{}\n<b>{}</b>\n<em>{}</em>\n\n{}\n\nOriginal URL: {}\n{}".format(
             params["conf"], params["title"], params["presenter"],
@@ -84,10 +91,10 @@ def upload_video(url, params):
                       "linux audio conference",
                       "linux", "audio", "software", "kde", "gnome",
                       "conference", "free software",
-                      params['year']
+                      year
                   ],
-                  date = params['year'],
-                  year = params['year'],
+                  date = year,
+                  year = year,
                   language = 'eng',
                   licenseurl = params['license'],
                   description=description,
@@ -102,7 +109,8 @@ def upload_video(url, params):
 
         u = urlparse(url)
         local_item_file = os.path.basename(u.path)
-        (item_id, ext) = os.path.splitext(local_item_file)
+        # (item_id, ext) = os.path.splitext(local_item_file)
+
         dest_file = os.path.join(tmpdirname, local_item_file)
         if download_video and os.path.exists(dest_file) is False:
             print("Downloading video {}".format(url))
@@ -117,6 +125,11 @@ def upload_video(url, params):
                 item_file = dest_file
                 print("File {} already downloaded".format(dest_file))
 
+        item_id = idify_title(params["title"])
+
+        # The item id will be prefixed by LAC + year
+        # As to avoid duplicates
+        item_id = "LAC{}{}".format(year, item_id)
         item_id = ensure_item_id(item_id)
         if item_id is None:
             print("Can't get item_id")
@@ -129,7 +142,7 @@ def upload_video(url, params):
             if r[0].status_code != 200:
                 sys.exit(1)
         else:
-            print("Dry run, not uploading video")
+            print("Dry run, not uploading video for item {}".format(item_id))
 
         for asset in ["paper_url", "slides_url"]:
             if params[asset] is None:
@@ -216,7 +229,7 @@ year = m.group(1)
 
 print(conf)
 
-if year == "2011" or year == "2012" or year == "2013" or year == "2014":
+if year == "2011" or year == "2012" or year == "2013" or year == "2014" or year == "2015":
     # print("Found conference I know")
 
     result = tree.xpath('//div[@class="title"]/b/text()')
@@ -226,6 +239,8 @@ if year == "2011" or year == "2012" or year == "2013" or year == "2014":
     result = tree.xpath('//div[@class="title"]/em/text()')
     if len(result) >= 1:
         presenter = result[0]
+    else:
+        presenter = None
 
     result = tree.xpath('//div[@class="links"]/ul/li[contains(text(), "Video URL: ")]/a')
     if len(result) == 0:
