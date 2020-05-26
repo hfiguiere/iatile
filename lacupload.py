@@ -16,6 +16,7 @@ import urllib
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
+from lac import idify_title, linkify, ensure_item_id
 from internetarchive import upload, get_item
 
 parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
@@ -27,50 +28,19 @@ parser.add_argument("--paper-only", action="store_true", help="Only download the
 parser.add_argument("--video-only", action="store_true", help="Only download the video")
 
 args = parser.parse_args()
-dry_run = args.dry_run
-verbose = args.verbose
 
 download_slides = args.slides_only or not (args.paper_only or args.video_only)
 download_paper = args.paper_only or not (args.slides_only or args.video_only)
 download_video = args.video_only or not (args.paper_only or args.slides_only)
 
-if verbose is True:
-    reporter = lambda count, size, total: print(".", end="", flush=True)
-else:
-    reporter = None
-
-#
-# Turn a title to an id
-#
-def idify_title(title):
-    return re.sub(r"[^0-9a-zA-Z]", "", title.title())
-
-#
-# Turn an url to HTML markup link
-#
-# Doesn't validate the url
-def linkify(url):
-    return '<a href="{}">{}</a>'.format(url, url)
-
-#
-# Ensure the item_id is unused.
-#
-# Return the unused item_id or None
-#
-def ensure_item_id(item_id):
-    # Shrink to 70 chars. IA has a hard limit to 100.
-    item_id = item_id[:70]
-    item = get_item(item_id)
-    while len(get_item(item_id).item_metadata) != 0:
-        l = len(item_id)
-        if l <= 12:
-            return None
-        item_id = item_id[:l - 1]
-
-    return item_id
 
 
-def upload_video(url, params):
+def upload_video(url, params, dry_run = False, verbose = False):
+
+        if verbose is True:
+            reporter = lambda count, size, total: print(".", end="", flush=True)
+        else:
+            reporter = None
 
 #    with tempfile.TemporaryDirectory() as tmpdirname:
         tmpdirname = "./downloads"
@@ -313,7 +283,8 @@ if year == "2011" or year == "2012" or year == "2013" or year == "2014" or year 
         date = year
     )
 
-    upload_video(video_url, params)
+    upload_video(video_url, params,
+                 dry_run = args.dry_run, verbose = args.verbose)
 else:
     print("Unknown conference {}".format(conf))
     sys.exit(1)

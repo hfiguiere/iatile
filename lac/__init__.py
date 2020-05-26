@@ -1,0 +1,34 @@
+
+import re
+from internetarchive import get_item
+
+#
+# Turn a title to an id
+#
+def idify_title(title):
+    return re.sub(r"[^0-9a-zA-Z]", "", title.title())
+
+#
+# Turn an url to HTML markup link
+#
+# Doesn't validate the url
+def linkify(url):
+    return '<a href="{}">{}</a>'.format(url, url)
+
+
+#
+# Ensure the item_id is unused.
+#
+# Return the unused item_id or None
+#
+def ensure_item_id(item_id):
+    # Shrink to 70 chars. IA has a hard limit to 100.
+    item_id = item_id[:70]
+    item = get_item(item_id)
+    while len(get_item(item_id).item_metadata) != 0:
+        l = len(item_id)
+        if l <= 12:
+            return None
+        item_id = item_id[:l - 1]
+
+    return item_id
