@@ -12,11 +12,13 @@ from lxml import html
 import requests
 
 import lac
+import lacupload
 
 parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
 parser.add_argument("url", help="URL")
 parser.add_argument("-n", "--dry-run", action="store_true", help="Dry run")
 parser.add_argument("-v", "--verbose", action="store_true", help="Verbose")
+parser.add_argument("--orphans", action="store_true", help="Only get orphan items")
 
 args = parser.parse_args()
 dry_run = args.dry_run
@@ -25,6 +27,8 @@ verbose = args.verbose
 def parse_program(url, verbose = False):
     page = requests.get(args.url)
     tree = html.fromstring(page.content)
+
+    program = []
 
     result = tree.xpath("//div[@id=\"maintitle\"]/text()");
     if result == 0:
@@ -47,6 +51,8 @@ def parse_program(url, verbose = False):
     timeslots = tree.xpath("//div[@id=\"content\"]/span[@class=\"tme\"]")
     for tm in timeslots:
         # print("Found timeslot {}".format(tm.text_content()))
+        if verbose:
+            print("BEGIN ========")
         nodes = tm.xpath("following-sibling::node()[local-name() != \"\"]")
         # print("Found {} node".format(len(nodes)))
 
@@ -69,9 +75,13 @@ def parse_program(url, verbose = False):
                 if title is None:
                     result = node.xpath("b/text()");
                     if len(result) > 0:
-                        title = result
+                        title = result[0]
             elif node.tag == "em":
-                presenter = node.text
+                p = node.xpath("a/text()")
+                if len(p) > 0:
+                    presenter = p[0]
+                else:
+                    presenter = node.text
             elif node.tag == "div":
                 klass = node.get("class")
                 if klass == "abstract":
@@ -97,8 +107,9 @@ def parse_program(url, verbose = False):
         if len(title) == 0:
             print("No title found")
             sys.exit(1)
+
         if verbose:
-            print("Title: {}".format(title[0]))
+            print("Title: {}".format(title))
             print("Found abstract: {}".format(abstract))
             print("Presenter: {}".format(presenter))
             if video_link is not None:
@@ -112,5 +123,42 @@ def parse_program(url, verbose = False):
             if misc_link is not None:
                 print("misc {}".format(misc_link))
 
+        params = dict(
+            conf = conf,
+            title = title,
+            presenter = presenter,
+            source = None,
+            abstract = abstract,
+            video_url = video_link,
+            paper_url = paper_link,
+            slides_url = slides_link,
+            audio_url = audio_link,
+            misc_url = misc_link,
+            license_text = "",
+            license = None,
+            year = year,
+            date = year
+        )
+        program.append(params)
 
-parse_program(args.url, verbose = args.verbose)
+    return program
+
+
+
+program = parse_program(args.url, verbose = args.verbose)
+print("found {} item of conference program".format(len(program)))
+if args.orphans:
+    print("checking orphans")
+    orphans = []
+    for item in program:
+        if not lac.is_video_page(item["video_url"]):
+            orphans.append(item)
+    print("found {} orphan item of conference program".format(len(orphans)))
+    program = orphans
+
+for item in program:
+    if item["video_url"] is not None or item["paper_url"] is not None or item["slides_url"] is not None or item["audio_url"] is not None:
+        # or item["misc_url"] is not None:
+        lacupload.upload_video(item["video_url"], item, dry_run=dry_run, verbose=verbose)
+    else:
+        print("Nothing to download for {}".format(item["title"]))

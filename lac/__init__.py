@@ -13,6 +13,8 @@ def idify_title(title):
 #
 # Doesn't validate the url
 def linkify(url):
+    if url is None:
+        return ""
     return '<a href="{}">{}</a>'.format(url, url)
 
 
@@ -32,3 +34,12 @@ def ensure_item_id(item_id):
         item_id = item_id[:l - 1]
 
     return item_id
+
+
+#
+# Return true if the video_url is a video page.
+#
+def is_video_page(url):
+    if url is None:
+        return False
+    return re.match(r"video\.php\?id=[\d]*$", url)
