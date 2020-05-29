@@ -42,4 +42,4 @@ def ensure_item_id(item_id):
 def is_video_page(url):
     if url is None:
         return False
-    return re.match(r"video\.php\?id=[\d]*$", url)
+    return re.match(r".*/video\.php\?id=[\d]*$", url)

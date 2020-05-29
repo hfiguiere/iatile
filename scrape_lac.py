@@ -10,6 +10,7 @@ import argparse
 import lxml
 from lxml import html
 import requests
+from urllib.parse import urlparse, urljoin
 
 import lac
 import lacupload
@@ -25,7 +26,7 @@ dry_run = args.dry_run
 verbose = args.verbose
 
 def parse_program(url, verbose = False):
-    page = requests.get(args.url)
+    page = requests.get(url)
     tree = html.fromstring(page.content)
 
     program = []
@@ -89,7 +90,11 @@ def parse_program(url, verbose = False):
                 elif klass == "flright":
                     link = node.xpath("a[contains(text(), \"Video\")]/@href")
                     if len(link) > 0:
-                        video_link = link[0]
+                        video_link = urljoin(url, link[0])
+                        if not re.match(r"lac\.linuxaudio\.org",
+                                        urlparse(video_link).netloc):
+                            print("URL is off LAC")
+                            video_link = None
                     link = node.xpath("a[contains(text(), \"Paper\")]/@href")
                     if len(link) > 0:
                         paper_link = link[0]
