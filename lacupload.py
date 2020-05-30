@@ -19,7 +19,10 @@ from urllib.request import urlretrieve
 from lac import idify_title, linkify, ensure_item_id
 from internetarchive import upload, get_item
 
-def upload_video(url, params, dry_run=False, verbose=False, download_flags=None):
+#
+# If retry is true, ensure_item_id shouldn't try to find a new unique ID
+#
+def upload_video(url, params, verbose=False, dry_run=False, download_flags=None, retry=False):
     if download_flags is None:
         download_video = True
         download_slides = True
@@ -96,12 +99,17 @@ def upload_video(url, params, dry_run=False, verbose=False, download_flags=None)
     # The item id will be prefixed by LAC + year
     # As to avoid duplicates
     item_id = "LAC{}{}".format(year, item_id)
-    item_id = ensure_item_id(item_id)
-    if item_id is None:
-        print("Can't get item_id")
-        sys.exit(1)
+    found_id = ensure_item_id(item_id, retry)
+    if found_id is None:
+        if retry:
+            print("Item {} already exist.".format(item_id))
+        else:
+            print("Can't get item_id")
+            sys.exit(1)
+    else:
+        item_id = found_id
 
-    if url is not None:
+    if url is not None and found_id is not None:
         if download_video and dry_run is False:
             print("Updloading {} for {}".format(item_file, item_id))
             r = upload(item_id, item_file, metadata=md)
@@ -112,7 +120,7 @@ def upload_video(url, params, dry_run=False, verbose=False, download_flags=None)
             print("Dry run, not uploading video for item {}".format(item_id))
 
     for asset in ["paper_url", "slides_url", "audio_url"]: #, "misc_url"]:
-        if params[asset] is None:
+        if asset not in params or params[asset] is None:
             continue
 
         if "bookreader-defaults" in md:
@@ -163,6 +171,12 @@ def upload_video(url, params, dry_run=False, verbose=False, download_flags=None)
         asset_item_id = "{}_{}".format(item_id, subtitle)
         print("item_id {}".format(asset_item_id))
 
+        if retry:
+            found_id = ensure_item_id(asset_item_id, retry)
+            if found_id is None:
+                print("Item {} already exist".format(asset_item_id))
+                continue
+
         # if this is empty we end up trying to upload the whole
         # download directory.
         # Let's just move on
@@ -174,11 +188,17 @@ def upload_video(url, params, dry_run=False, verbose=False, download_flags=None)
         dest_file = os.path.join(tmpdirname, local_item_file)
         if os.path.exists(dest_file) is False:
             asset_url = urllib.parse.quote(params[asset], safe=":/", encoding="UTF-8")
-            (item_file, headers) = urlretrieve(
-                asset_url,
-                filename=dest_file,
-                reporthook=reporter
-            )
+            print("downloading {}".format(asset_url))
+            try:
+                (item_file, headers) = urlretrieve(
+                    asset_url,
+                    filename=dest_file,
+                    reporthook=reporter
+                )
+            except urllib.error.HTTPError as err:
+                print("Failed to download {}: {}".format(asset_url, err))
+                continue
+
             if verbose is True:
                 print("Done")
         else:
@@ -200,8 +220,8 @@ def upload_video(url, params, dry_run=False, verbose=False, download_flags=None)
 #
 # parse video_page
 #
-def parse_video_page(url, verbose=False, dry_run=False, download_flags=None):
-    page = requests.get(args.url)
+def parse_video_page(url, verbose=False, dry_run=False, download_flags=None, retry=False):
+    page = requests.get(url)
     tree = html.fromstring(page.content)
 
     result = tree.xpath('//div[@class="header"]/text()')
@@ -298,7 +318,7 @@ def parse_video_page(url, verbose=False, dry_run=False, download_flags=None):
 
         upload_video(video_url, params,
                      dry_run=dry_run, verbose=verbose,
-                     download_flags=download_flags)
+                     download_flags=download_flags, retry=retry)
     else:
         print("Unknown conference {}".format(conf))
         sys.exit(1)

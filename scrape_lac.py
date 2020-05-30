@@ -20,10 +20,12 @@ parser.add_argument("url", help="URL")
 parser.add_argument("-n", "--dry-run", action="store_true", help="Dry run")
 parser.add_argument("-v", "--verbose", action="store_true", help="Verbose")
 parser.add_argument("--orphans", action="store_true", help="Only get orphan items")
+parser.add_argument("--retry", action="store_true", help="If the item already exist, skip.")
 
 args = parser.parse_args()
 dry_run = args.dry_run
 verbose = args.verbose
+retry = args.retry
 
 def parse_program(url, verbose = False):
     page = requests.get(url)
@@ -164,6 +166,9 @@ if args.orphans:
 for item in program:
     if item["video_url"] is not None or item["paper_url"] is not None or item["slides_url"] is not None or item["audio_url"] is not None:
         # or item["misc_url"] is not None:
-        lacupload.upload_video(item["video_url"], item, dry_run=dry_run, verbose=verbose)
+        if lac.is_video_page(item["video_url"]):
+            lacupload.parse_video_page(item["video_url"], verbose=verbose, dry_run=dry_run, retry=retry)
+        else:
+            lacupload.upload_video(item["video_url"], item, verbose=verbose, dry_run=dry_run, retry=retry)
     else:
         print("Nothing to download for {}".format(item["title"]))

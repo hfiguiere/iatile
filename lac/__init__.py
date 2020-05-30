@@ -20,14 +20,16 @@ def linkify(url):
 
 #
 # Ensure the item_id is unused.
+# retry = retry mode: don't try to find a new ID
 #
 # Return the unused item_id or None
 #
-def ensure_item_id(item_id):
+def ensure_item_id(item_id, retry=False):
     # Shrink to 70 chars. IA has a hard limit to 100.
     item_id = item_id[:70]
-    item = get_item(item_id)
     while len(get_item(item_id).item_metadata) != 0:
+        if retry:
+            return None
         l = len(item_id)
         if l <= 12:
             return None
