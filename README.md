@@ -4,6 +4,21 @@ lacupload.py
 A Python script to upload the Linux Audio Conference videos to
 Internet Archive. With metadata.
 
+Currently supported are Linux Audio Conference from 2010 to 2015.
+
+**If you are reading this, it is likely it doesn't need to be used
+anymore as everything has been uploaded to the Internet Archive**
+
+`scrape_lac.py` is designed to scrape the program page to fetch all
+the conference program items.
+
+`lacupload.py` will upload the items from a video page. It is used
+either as is or from `scrape_lac.py`.
+
+Both have command line arguments. `-n` or `--dry-run` will not upload
+to the internet archive, but otherwise will download. So running with
+`-n` and then without will download first all items, then upload them.
+
 settile.py
 ==========
 
