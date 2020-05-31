@@ -34,7 +34,7 @@ def parse_page(url, verbose=False):
     result = tree.xpath("//h2/text()")
     if len(result) > 0:
         full_title = result[0]
-        m = re.search(r"([^:])*: (.*)", full_title)
+        m = re.search(r"([^:]*): (.*)", full_title)
         if m:
             presenter = m.group(1)
             title = m.group(2).strip()
@@ -51,7 +51,7 @@ def parse_page(url, verbose=False):
         print(abstract)
 
     result = tree.xpath("//div[@id=\"content\"]/p[2]/child::node()")
-    print(result)
+    # print(result)
     for i in range(len(result)):
         n = result[i]
         if isinstance(n, str):
@@ -68,8 +68,7 @@ def parse_page(url, verbose=False):
                 i += 1
                 if result[i].tag == "a":
                     homepage_url = result[i].get("href")
-                    abstract += n
-                    abstract += lac.linkify(homepage_url)
+                    abstract += "\n{} {}".format(n, lac.linkify(homepage_url))
             elif re.match(r"Video Recording:", n):
                 if result[i + 1].tag == "a":
                     i += 1
@@ -88,7 +87,7 @@ def parse_page(url, verbose=False):
                     i += 1
                     misc_url = urljoin(url, result[i].get("href"))
                     if verbose:
-                        print("Misc link {}".format(n))
+                        print("Misc link {}: {}".format(n, misc_url))
 
     # video_file = re.sub(r": ", " - ", full_title)
     # video_file = re.sub(r" ", "_", video_file)
