@@ -60,7 +60,7 @@ def upload_video(url, params, verbose=False, dry_run=False, download_flags=None,
                   "conference", "free software",
                   year
               ],
-              date = year,
+              date = params["date"],
               year = year,
               language = 'eng',
               licenseurl = params['license'],
@@ -313,7 +313,7 @@ def parse_video_page(url, verbose=False, dry_run=False, download_flags=None, ret
             abstract = abstract,
             source = url,
             year = year,
-            date = year
+            date = params["date"]
         )
 
         upload_video(video_url, params,

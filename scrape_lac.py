@@ -13,7 +13,7 @@ import requests
 from urllib.parse import urlparse, urljoin
 
 import lac
-from lac import lac2009
+from lac import lac2009, lac2019
 import lacupload
 
 parser = argparse.ArgumentParser(description="Set tile for Internet Archive item")
@@ -36,6 +36,8 @@ def parse_program(url, verbose = False):
     if len(result) == 0:
         result = tree.xpath("//h1/text()")
     if len(result) == 0:
+        result = tree.xpath("//header/nav/a[@class=\"navbar-brand\"]/text()")
+    if len(result) == 0:
         print("Error: can't guess conference")
         sys.exit(1)
 
@@ -54,6 +56,9 @@ def parse_program(url, verbose = False):
 
     if year == "2009":
         return lac2009.parse_program(tree, url=url, verbose=verbose)
+
+    if year == "2019":
+        return lac2019.parse_program(tree, url=url, verbose=verbose)
 
     program = []
 
